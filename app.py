@@ -136,44 +136,37 @@ def scrape_reddit(subreddit="india", limit=50):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
     }
-    try:
-        r = requests.get(url, headers=headers, timeout=10)
-        r.raise_for_status()
-        data = r.json()
-        comments = []
-        for child in data.get("data", {}).get("children", []):
-            body = child.get("data", {}).get("body")
-            if body and len(body.split()) > 2:
-                comments.append({"tweet": body, "class": 2})
-        return comments
-    except:
-        return []
+    r = requests.get(url, headers=headers, timeout=10)
+    r.raise_for_status()
+    data = r.json()
+    comments = []
+    for child in data.get("data", {}).get("children", []):
+        body = child.get("data", {}).get("body")
+        if body and len(body.split()) > 2:
+            comments.append({"tweet": body, "class": 2})
+    return comments
 
 def scrape_generic_url(url):
     """
     Extracts text from any public URL using BeautifulSoup.
     """
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
-        }
-        r = requests.get(url, headers=headers, timeout=10)
-        r.raise_for_status()
-        soup = BeautifulSoup(r.text, 'html.parser')
-        
-        # Remove script and style elements
-        for script in soup(["script", "style"]):
-            script.extract()
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+    }
+    r = requests.get(url, headers=headers, timeout=10)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, 'html.parser')
+    
+    # Remove script and style elements
+    for script in soup(["script", "style"]):
+        script.extract()
 
-        # Extract textual content from common comment/post containers
-        text = soup.get_text(separator=' ')
-        lines = [line.strip() for line in text.splitlines() if len(line.strip()) > 20]
-        
-        return [{"tweet": line, "class": 2} for line in lines[:100]] # Cap at 100 entries
-    except Exception as e:
-        print(f"URL Scrape Error: {e}")
-        return []
+    # Extract textual content from common comment/post containers
+    text = soup.get_text(separator=' ')
+    lines = [line.strip() for line in text.splitlines() if len(line.strip()) > 20]
+    
+    return [{"tweet": line, "class": 2} for line in lines[:100]] # Cap at 100 entries
 
 def scrape_github_datasets():
     """
@@ -300,9 +293,18 @@ def main():
             
         if st.button("Start Harvesting"):
             with st.spinner("Processing Source..."):
-                added = update_data_hub(CSV_PATH, src, identifier, uploaded_file)
-                st.session_state.data = load_and_preprocess_data(CSV_PATH)
-                st.success(f"Successfully added **{added}** new records from {src}!")
+                try:
+                    added = update_data_hub(CSV_PATH, src, identifier, uploaded_file)
+                    st.session_state.data = load_and_preprocess_data(CSV_PATH)
+                    if added > 0:
+                        st.success(f"Successfully added **{added}** new records from {src}!")
+                    else:
+                        st.warning("No new data found. The source might be empty.")
+                except Exception as e:
+                    if "403" in str(e) or "429" in str(e):
+                        st.error("🚨 **Access Blocked!** The website's security blocked our cloud server. This is normal for cloud deployments. Use your **local deployment** to scrape data successfully!")
+                    else:
+                        st.error(f"Error scraping data: {e}")
                 
         st.write(f"Total entries in dataset: **{len(st.session_state.data)}**")
         st.dataframe(st.session_state.data.head(15), use_container_width=True)
