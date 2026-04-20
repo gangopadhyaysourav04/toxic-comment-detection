@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import re
 import os
-import requests
 import time
 import joblib
 import matplotlib.pyplot as plt
@@ -16,10 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.utils import resample
-from collections import Counter
-from bs4 import BeautifulSoup
-
-# --- Configuration & Paths ---
+from collections import Counter# --- Configuration & Paths ---
 st.set_page_config(
     page_title="Toxic Comment Detection Pipeline",
     page_icon="🛡️",
@@ -128,79 +124,10 @@ def inject_synthetic_data(df):
         
     return pd.concat([df, df_n, df_h, df_o], ignore_index=True)
 
-# ---------------- ADVANCED SCRAPER HUB ----------------
-
-def scrape_reddit(subreddit="india", limit=50):
-    url = f"https://www.reddit.com/r/{subreddit}/comments.json?limit={limit}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
-    }
-    r = requests.get(url, headers=headers, timeout=10)
-    r.raise_for_status()
-    data = r.json()
-    comments = []
-    for child in data.get("data", {}).get("children", []):
-        body = child.get("data", {}).get("body")
-        if body and len(body.split()) > 2:
-            comments.append({"tweet": body, "class": 2})
-    return comments
-
-def scrape_generic_url(url):
-    """
-    Extracts text from any public URL using BeautifulSoup.
-    """
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
-    }
-    r = requests.get(url, headers=headers, timeout=10)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.text, 'html.parser')
-    
-    # Remove script and style elements
-    for script in soup(["script", "style"]):
-        script.extract()
-
-    # Extract textual content from common comment/post containers
-    text = soup.get_text(separator=' ')
-    lines = [line.strip() for line in text.splitlines() if len(line.strip()) > 20]
-    
-    return [{"tweet": line, "class": 2} for line in lines[:100]] # Cap at 100 entries
-
-def scrape_github_datasets():
-    """
-    Fetches raw toxicity datasets from curated GitHub repositories.
-    """
-    sources = [
-        "https://raw.githubusercontent.com/pmathur5k10/Hinglish-Offensive-Text-Classification/master/Hinglish_Profanity_List.csv"
-    ]
-    records = []
-    for url in sources:
-        try:
-            r = requests.get(url, timeout=10)
-            if r.status_code == 200:
-                # Basic parsing for profanity lists to convert to synthetic samples
-                lines = r.text.splitlines()
-                for line in lines:
-                    parts = line.split(',')
-                    if parts:
-                        word = parts[0].strip()
-                        records.append({"tweet": f"tum {word} ho", "class": 1}) # Map to Abusive
-        except:
-            continue
-    return records
-
-def update_data_hub(filepath, source_type, identifier=None, uploaded_file=None):
+def update_data_hub(filepath, uploaded_file=None):
     new_data = []
     
-    if source_type == "Reddit" and identifier:
-        new_data = scrape_reddit(identifier)
-    elif source_type == "Generic URL" and identifier:
-        new_data = scrape_generic_url(identifier)
-    elif source_type == "GitHub Harvester":
-        new_data = scrape_github_datasets()
-    elif source_type == "Manual Upload" and uploaded_file is not None:
+    if uploaded_file is not None:
         try:
             df_upload = pd.read_csv(uploaded_file)
             if "tweet" in df_upload.columns:
@@ -276,35 +203,22 @@ def main():
         st.session_state.data = load_and_preprocess_data(CSV_PATH)
 
     if choice == "Data Collection":
-        st.header("🌐 Universal Data Harvester")
-        st.info("Gather toxicity data from Reddit, GitHub, or any public URL (News/X/Blogs).")
+        st.header("📂 Data Collection")
+        st.info("Upload new CSV datasets to expand the training data.")
         
-        src = st.selectbox("Select Data Source", ["Reddit", "Generic URL", "GitHub Harvester", "Manual Upload"], key="data_source_select")
-        
-        identifier = ""
-        uploaded_file = None
-        
-        if src == "Reddit":
-            identifier = st.text_input("Subreddit Name", "india")
-        elif src == "Generic URL":
-            identifier = st.text_input("Public URL (e.g. news page, blog thread)", "")
-        elif src == "Manual Upload":
-            uploaded_file = st.file_uploader("Upload CSV (must contain 'tweet' column)", type="csv")
+        uploaded_file = st.file_uploader("Upload CSV (must contain 'tweet' column)", type="csv")
             
-        if st.button("Start Harvesting"):
-            with st.spinner("Processing Source..."):
+        if st.button("Start Processing"):
+            with st.spinner("Processing file..."):
                 try:
-                    added = update_data_hub(CSV_PATH, src, identifier, uploaded_file)
+                    added = update_data_hub(CSV_PATH, uploaded_file)
                     st.session_state.data = load_and_preprocess_data(CSV_PATH)
                     if added > 0:
-                        st.success(f"Successfully added **{added}** new records from {src}!")
+                        st.success(f"Successfully added **{added}** new records!")
                     else:
-                        st.warning("No new data found. The source might be empty.")
+                        st.warning("No new data found. The file might be empty or improperly formatted.")
                 except Exception as e:
-                    if "403" in str(e) or "429" in str(e):
-                        st.error("🚨 **Access Blocked!** The website's security blocked our cloud server. This is normal for cloud deployments. Use your **local deployment** to scrape data successfully!")
-                    else:
-                        st.error(f"Error scraping data: {e}")
+                    st.error(f"Error processing data: {e}")
                 
         st.write(f"Total entries in dataset: **{len(st.session_state.data)}**")
         st.dataframe(st.session_state.data.head(15), use_container_width=True)
