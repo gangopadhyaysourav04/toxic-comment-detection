@@ -74,55 +74,6 @@ def load_and_preprocess_data(filepath):
     df["clean_tweet"] = df["tweet"].apply(clean_text)
     return df
 
-def inject_synthetic_data(df):
-    neutral = [
-        "good morning", "thank you", "how are you", "nice work", "great job", 
-        "namaste", "jai hind", "take care", "sab theek hai", "mausam accha hai", 
-        "khana kha liya?", "all good bro", "kyu bhai kaisa hai", "badhiya hai",
-        "kaise hain aap", "kaise ho", "kaha ho", "kya kar rahe ho", "khana khaya",
-        "namaste ji", "aapka swagat hai", "bhout shukriya", "dhanyawad",
-        "bahut accha laga", "aap bahut acche hain", "milkar khushi hui",
-        "kal milte hain", "dost kaise ho", "family kaisi hai", "sab thik thak",
-        "main thik hoon", "aap kaise ho", "kaise ho aap", "kya ho raha hai",
-        "kuch nahi", "bas aise hi", "ghar par sab kaise hain", "thik hai bye",
-        "ok done", "see you soon", "take care bro", "maze karo"
-    ]
-    
-    # Severe Hinglish toxicity samples (intentional phonetic variety)
-    hinglish_toxic = [
-        "teri maa chod dunga", "maa ki chut teri", "teri behen ki chut", 
-        "gand phad dunga", "gaand me danda", "randi ki aulad", "betichod",
-        "madarchod saala", "bhenchod kahi ka", "kutte ka baccha", "haramzada",
-        "suar ka bachha", "teri maa ka bhosda", "chal hat bsdk", "bsdk",
-        "chutiyapa mat kar", "gandu insaan", "lauda le le mera", "chuchi dikha",
-        "porn dekh ke muth mar", "teri maa mere sath hai", "teri aurat meri hai",
-        "aap apni g@nd maraye", "aap chutiya hain", "aap apni gand marwa",
-        "g@nd marao ji", "lauda khalo aap", "aap bhosadiwale hain",
-        "apni aukat me raho chutiye", "maa chuda apni", "behen chuda"
-    ]
-    
-    toxic_intent = [
-        "i hope you die", "kill yourself", "go to hell", "i will kill you", 
-        "hope your parents die", "get cancer", "die in a hole", "you are worthless",
-        "teri maut ho jaye", "mar ja kutte", "zeher kha le", "apni jaan de de",
-        "tera khandan khatam ho jaye", "sharm kar besharm", "tu dharti pe bojh hai"
-    ]
-    
-    # Reinforced Hate (Class 0)
-    hate = [
-        "nigger", "kike", "faggot", "wetback", "porkistanis go back", "indian pigs",
-        "mulla", "katwa", "bhakt saale", "librandu", "chamar", "bhangi saale",
-        "dalit pigs", "upper caste superiority", "kill all migrants"
-    ]
-
-    df_n = pd.DataFrame({"class": 2, "tweet": neutral})
-    df_h = pd.DataFrame({"class": 0, "tweet": hate + hinglish_toxic + toxic_intent})
-    df_o = pd.DataFrame({"class": 1, "tweet": ["bc", "mc", "saale", "haramkhor", "besharm", "ullu", "kamina"]})
-    
-    for _df in [df_n, df_h, df_o]:
-        _df["clean_tweet"] = _df["tweet"].apply(clean_text)
-        
-    return pd.concat([df, df_n, df_h, df_o], ignore_index=True)
 
 def update_data_hub(filepath, uploaded_file=None):
     new_data = []
@@ -249,8 +200,7 @@ def main():
         st.header("⚙️ Model Selection & Training")
         if st.session_state.data.empty: st.warning("No data found."); return
         
-        df = inject_synthetic_data(st.session_state.data)
-        df = balance_classes(df)
+        df = balance_classes(st.session_state.data)
         st.write(f"Training on {len(df)} samples after balancing.")
         
         if st.button("Train Pipeline"):
