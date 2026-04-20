@@ -196,7 +196,7 @@ def train_pipeline(df):
 def main():
     st.title("🛡️ Toxic Comment Detection Pipeline")
     
-    menu = ["Data Collection", "EDA", "Model training", "Testing & Deployment"]
+    menu = ["Data Collection", "EDA", "Model training", "Testing"]
     choice = st.sidebar.selectbox("Pipeline Pipeline", menu, key="main_pipeline_choice")
     
     if "data" not in st.session_state:
@@ -266,8 +266,8 @@ def main():
                             xticklabels=["Hate", "Off", "Clean"], yticklabels=["Hate", "Off", "Clean"])
                 st.pyplot(fig)
 
-    elif choice == "Testing & Deployment":
-        st.header("🚀 Deployment & Testing")
+    elif choice == "Testing":
+        st.header("🚀 Testing")
         if not os.path.exists(MODEL_PATH): st.error("No model found. Train first."); return
         
         model = joblib.load(MODEL_PATH)
