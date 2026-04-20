@@ -277,7 +277,7 @@ def main():
     st.title("🛡️ Toxic Comment Detection Pipeline")
     
     menu = ["Data Collection", "EDA", "Model training", "Testing & Deployment"]
-    choice = st.sidebar.selectbox("Pipeline Pipeline", menu)
+    choice = st.sidebar.selectbox("Pipeline Pipeline", menu, key="main_pipeline_choice")
     
     if "data" not in st.session_state:
         st.session_state.data = load_and_preprocess_data(CSV_PATH)
@@ -286,7 +286,7 @@ def main():
         st.header("🌐 Universal Data Harvester")
         st.info("Gather toxicity data from Reddit, GitHub, or any public URL (News/X/Blogs).")
         
-        src = st.selectbox("Select Data Source", ["Reddit", "Generic URL", "GitHub Harvester", "Manual Upload"])
+        src = st.selectbox("Select Data Source", ["Reddit", "Generic URL", "GitHub Harvester", "Manual Upload"], key="data_source_select")
         
         identifier = ""
         uploaded_file = None
@@ -378,5 +378,4 @@ def main():
                 st.warning("Please enter some text.")
 
 if __name__ == "__main__":
-    main()
     main()
