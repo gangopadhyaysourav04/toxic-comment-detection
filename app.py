@@ -15,9 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.utils import resample
-from collections import Counter
-
-# --- Configuration & Paths ---
+from collections import Counter# --- Configuration & Paths ---
 st.set_page_config(
     page_title="Toxic Comment Detection Pipeline",
     page_icon="🛡️",
@@ -106,7 +104,7 @@ def update_data_hub(filepath, uploaded_file=None):
 def balance_classes(df):
     counts = df["class"].value_counts()
     # Cap samples to speed up training while keeping it balanced
-    max_n = min(counts.max(), 30000) 
+    max_n = min(counts.max(), 10000) 
     return pd.concat([
         resample(df[df["class"] == c], replace=True, n_samples=max_n, random_state=42)
         for c in df["class"].unique()
@@ -150,7 +148,7 @@ def main():
     st.title("🛡️ Toxic Comment Detection Pipeline")
     
     menu = ["Data Collection", "EDA", "Model training", "Testing"]
-    choice = st.sidebar.selectbox("Navigation", menu, key="main_pipeline_choice")
+    choice = st.sidebar.selectbox("Pipeline Pipeline", menu, key="main_pipeline_choice")
     
     if "data" not in st.session_state:
         st.session_state.data = load_and_preprocess_data(CSV_PATH)
