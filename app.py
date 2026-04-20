@@ -132,7 +132,10 @@ def inject_synthetic_data(df):
 
 def scrape_reddit(subreddit="india", limit=50):
     url = f"https://www.reddit.com/r/{subreddit}/comments.json?limit={limit}"
-    headers = {"User-agent": "Antigravity Scraper 1.1"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+    }
     try:
         r = requests.get(url, headers=headers, timeout=10)
         r.raise_for_status()
@@ -151,7 +154,10 @@ def scrape_generic_url(url):
     Extracts text from any public URL using BeautifulSoup.
     """
     try:
-        headers = {"User-agent": "Mozilla/5.0"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+        }
         r = requests.get(url, headers=headers, timeout=10)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, 'html.parser')
@@ -372,4 +378,5 @@ def main():
                 st.warning("Please enter some text.")
 
 if __name__ == "__main__":
+    main()
     main()
