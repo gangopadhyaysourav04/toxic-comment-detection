@@ -42,6 +42,18 @@ st.markdown("""
 
 def clean_text(text):
     text = str(text).lower()
+    
+    # Word boundary mappings for common shorthands
+    word_mappings = {
+        "u": "you", "ur": "your", "r": "are", "n": "and",
+        "pls": "please", "plz": "please", "thx": "thanks", 
+        "bcz": "because", "bcuz": "because", "cuz": "because",
+        "k": "okay", "wat": "what", "dat": "that",
+        "v": "we", "da": "the", "dis": "this"
+    }
+    for k, v in word_mappings.items():
+        text = re.sub(rf"\b{k}\b", v, text)
+
     # Comprehensive mappings for Hinglish phonetic variations + roots
     mappings = {
         "g@ndu": "gandu", "g@ndoo": "gandu", "g4ndu": "gandu", "gaand": "gandu", "g@nd": "gaand", "gand": "gaand",
@@ -56,6 +68,7 @@ def clean_text(text):
     }
     for k, v in mappings.items():
         text = text.replace(k, v)
+        
     text = re.sub(r"http\S+|www\S+", "", text)
     text = re.sub(r"@\w+|#\w+", "", text)
     text = re.sub(r"[^a-zA-Z\u0900-\u097F\s]", " ", text)
